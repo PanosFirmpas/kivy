@@ -12,6 +12,8 @@ from kivy.uix.label import Label
 from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 from kivy.properties import ListProperty, ObjectProperty,NumericProperty
 
+# from kivy.uix.screenmanager import NoTransition
+
 import time
 import random
 
@@ -96,16 +98,22 @@ class ViewListScreen(MyScreen):
                                 orientation = 'vertical')
         c_list = App.get_running_app().root.current_list
         list_grid.height = len(c_list)*40 #HARDCODE
-        for k in c_list:
+
+        buttons = []
+        for e,k in enumerate(c_list):
             b = Button(
-                text = k,
+                text = k['name'],
                 size_hint_y = None,
-                height = 40
+                height = 40,
+                id = str(e)
                 )
-            # b.bind(on_release=b.show_position(self.id))
+            #lambda event: self.do_something(args, event)
+            b.bind(on_release = App.get_running_app().root.show_spell_at_position )
+            buttons.append(b)
+        for b in buttons:
             list_grid.add_widget(b)
         
-        print 
+        
         self.sv.clear_widgets()
         self.sv.add_widget(list_grid)
 
@@ -115,8 +123,15 @@ class ViewSpellScreen(MyScreen):
     def __init__(self, **kwargs):
         super(ViewSpellScreen, self).__init__(**kwargs)
     
-    def prepare_yourself(self):
-        print 'foo!2'
+    def prepare_yourself(self,i=0):
+        self.content_box.clear_widgets()
+
+        spell = App.get_running_app().root.current_list[i]
+
+        l = Label(text=spell['name'])
+
+        self.content_box.add_widget(l)
+        
 
 
 ############################
@@ -127,15 +142,22 @@ class ViewSpellScreen(MyScreen):
 
 class MyScreenManager(ScreenManager):
     def __init__(self, **kwargs):
+        # kwargs['transition'] = NoTransition()
         
         super(MyScreenManager, self).__init__(**kwargs)
         self.SPELLS = get_spells()
-        self.current_list = sorted(self.SPELLS.keys())
+        self.current_list = [self.SPELLS[x] for x in sorted(self.SPELLS.keys())]
         self.current_position = 0
 
     def menu_to_screen(self,name):
         self.get_screen(name).prepare_yourself()
         self.current = name
+
+    def show_spell_at_position(self,obj):
+        i = int(obj.id)
+        self.get_screen('view_spell_screen').prepare_yourself(i)
+        self.current = 'view_spell_screen'
+
     
     
         
