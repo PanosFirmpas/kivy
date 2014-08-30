@@ -8,6 +8,8 @@ from  kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import Button
 from kivy.uix.label import Label
+from kivy.uix.carousel import Carousel
+
 
 from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 from kivy.properties import ListProperty, ObjectProperty,NumericProperty
@@ -90,48 +92,54 @@ class ViewListScreen(MyScreen):
         super(ViewListScreen, self).__init__(**kwargs)
         self.sv = ScrollView()
         self.content_box.add_widget(self.sv)
-    
-    def prepare_yourself(self):
-        
-        list_grid = GridLayout(cols = 1,
+
+
+
+        self.list_grid = GridLayout(cols = 1,
                                 size_hint_y = None,
                                 orientation = 'vertical')
-        c_list = App.get_running_app().root.current_list
-        list_grid.height = len(c_list)*40 #HARDCODE
+        self.sv.add_widget(self.list_grid)
 
-        buttons = []
-        for e,k in enumerate(c_list):
-            b = Button(
-                text = k['name'],
-                size_hint_y = None,
-                height = 40,
-                id = str(e)
-                )
-            #lambda event: self.do_something(args, event)
-            b.bind(on_release = App.get_running_app().root.show_spell_at_position )
-            buttons.append(b)
-        for b in buttons:
-            list_grid.add_widget(b)
+        self.bind(on_pre_enter= self.prepare_yourself)
+    
+    def prepare_yourself(self,*args):
+        
+        self.list_grid.clear_widgets()
+
+        c_list = App.get_running_app().root.current_list
+        self.list_grid.height = len(c_list)*40 #HARDCODE
+
+        for e,spell in enumerate(c_list):
+            spell['button_card'].id = str(e)
+            self.list_grid.add_widget(spell['button_card'])
         
         
-        self.sv.clear_widgets()
-        self.sv.add_widget(list_grid)
+        
+        
 
 
 
 class ViewSpellScreen(MyScreen):
     def __init__(self, **kwargs):
         super(ViewSpellScreen, self).__init__(**kwargs)
+
+        self.carousel = Carousel()
+        self.content_box.add_widget(self.carousel)
+
+        self.bind(on_pre_enter= self.prepare_yourself)
     
     def prepare_yourself(self,i=0):
-        self.content_box.clear_widgets()
+        self.carousel.clear_widgets()
 
-        spell = App.get_running_app().root.current_list[i]
-
-        l = Label(text=spell['name'])
-
-        self.content_box.add_widget(l)
         
+
+        for spell in App.get_running_app().root.current_list:
+            
+            self.carousel.add_widget(spell['view_spell_card'])
+
+        position = App.get_running_app().root.current_position
+
+        self.carousel.index = position 
 
 
 ############################
@@ -146,29 +154,31 @@ class MyScreenManager(ScreenManager):
         
         super(MyScreenManager, self).__init__(**kwargs)
         self.SPELLS = get_spells()
+        for k in self.SPELLS.keys():
+            self.SPELLS[k]['view_spell_card'] = Label(text=self.SPELLS[k]['name'])
+
+            b = Button(
+                text = k,
+                size_hint_y = None,
+                height = 40
+                )
+            b.bind(on_release = self.show_spell_at_position )
+            self.SPELLS[k]['button_card'] = b
+            
+
+
         self.current_list = [self.SPELLS[x] for x in sorted(self.SPELLS.keys())]
         self.current_position = 0
 
     def menu_to_screen(self,name):
-        self.get_screen(name).prepare_yourself()
+        # self.get_screen(name).prepare_yourself()
         self.current = name
 
     def show_spell_at_position(self,obj):
         i = int(obj.id)
-        self.get_screen('view_spell_screen').prepare_yourself(i)
+        self.current_position = i
         self.current = 'view_spell_screen'
 
-    
-    
-        
-
-
-        
-
-    
-
-   
-        
 
 
 
